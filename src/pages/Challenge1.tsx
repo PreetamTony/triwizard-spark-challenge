@@ -5,6 +5,7 @@ import { MagicalButton } from '@/components/ui/magical-button'
 import { MagicalCard, MagicalCardContent } from '@/components/ui/magical-card'
 import { MagicalTimer } from '@/components/ui/magical-timer'
 import { Input } from '@/components/ui/input'
+import Navigation from '@/components/Navigation'
 import { toast } from 'sonner'
 import dumbledoreOfficeBg from '@/assets/dumbledore-office.jpg'
 import dumbledorePortrait from '@/assets/dumbledore-portrait.png'
@@ -128,9 +129,10 @@ const Challenge1 = () => {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}
-    >
+      >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60" />
+      <Navigation />
       
       {/* Timer */}
       <div className="absolute top-6 right-6 z-20">
@@ -142,7 +144,7 @@ const Challenge1 = () => {
       </div>
 
       {/* Left side - Dumbledore */}
-      <div className="relative z-10 flex-1 flex items-center justify-center p-8">
+      <div className="relative z-10 flex-1 flex items-center justify-center p-8 pt-20">
         <div className="text-center space-y-6">
           <div className={`transition-all duration-1000 ${secretRevealed ? 'magic-glow animate-pulse-glow' : ''}`}>
             <img
@@ -151,23 +153,23 @@ const Challenge1 = () => {
               className="w-80 h-96 object-contain mx-auto filter drop-shadow-2xl"
             />
           </div>
-          <h1 className="text-4xl font-magical font-bold text-magic-gold">
+          <h1 className="text-4xl font-display font-bold text-magic-gold">
             Dumbledore's Office
           </h1>
-          <p className="text-lg font-fantasy text-magic-blue max-w-md">
+          <p className="text-lg font-body text-magic-blue max-w-md">
             "The answers you seek lie not in what you ask, but in how you ask it..."
           </p>
         </div>
       </div>
 
       {/* Right side - Chat Interface */}
-      <div className="relative z-10 flex-1 p-8 flex flex-col">
+      <div className="relative z-10 flex-1 p-8 pt-20 flex flex-col">
         <MagicalCard variant="magical" className="flex-1 flex flex-col h-full max-h-[80vh]">
           <div className="p-6 border-b border-magic-blue/30">
-            <h2 className="text-2xl font-magical font-bold text-magic-gold">
+            <h2 className="text-2xl font-display font-bold text-magic-gold">
               Conversation with Dumbledore
             </h2>
-            <p className="text-sm font-fantasy text-muted-foreground mt-2">
+            <p className="text-sm font-body text-muted-foreground mt-2">
               Attempts: {attempts} | Hint: Try prompt injection techniques
             </p>
           </div>
@@ -186,7 +188,7 @@ const Challenge1 = () => {
                       : 'bg-parchment text-amber-900 border-2 border-amber-600'
                   }`}
                 >
-                  <p className="font-fantasy">{message.content}</p>
+                  <p className="font-body">{message.content}</p>
                   <span className="text-xs opacity-60 block mt-2">
                     {message.timestamp.toLocaleTimeString()}
                   </span>
@@ -204,7 +206,7 @@ const Challenge1 = () => {
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask Dumbledore for the secret keyword..."
-                className="flex-1 bg-background/50 backdrop-blur-sm border-magic-blue/50 font-fantasy"
+                className="flex-1 bg-background/50 backdrop-blur-sm border-magic-blue/50 font-body"
                 disabled={secretRevealed}
               />
               <MagicalButton

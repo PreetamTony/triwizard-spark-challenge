@@ -19,9 +19,10 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'magical': ['Cinzel Decorative', 'serif'],
-				'fantasy': ['Cinzel', 'serif'],
-				'serif': ['Crimson Text', 'serif'],
+				'display': ['Playfair Display', 'serif'],
+				'body': ['Inter', 'sans-serif'],
+				'mono': ['JetBrains Mono', 'monospace'],
+				'elegant': ['Cormorant Garamond', 'serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',

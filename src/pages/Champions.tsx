@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Trophy, Medal, Star, Download, RotateCcw, Share2 } from 'lucide-react'
 import { MagicalButton } from '@/components/ui/magical-button'
 import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from '@/components/ui/magical-card'
+import Navigation from '@/components/Navigation'
 import { toast } from 'sonner'
 import greatHallBg from '@/assets/great-hall.jpg'
 
@@ -90,6 +91,7 @@ const Champions = () => {
     >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/50" />
+      <Navigation />
       
       {/* Magical celebration effects */}
       {showFireworks && (
@@ -114,7 +116,7 @@ const Champions = () => {
       )}
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto p-8 min-h-screen flex items-center justify-center">
+      <div className="relative z-10 container mx-auto p-8 pt-20 min-h-screen flex items-center justify-center">
         <div className="max-w-4xl w-full space-y-8">
           {/* Main celebration card */}
           <MagicalCard variant="magical" className="text-center animate-magical-fade gold-glow">
@@ -123,10 +125,10 @@ const Champions = () => {
                 <Trophy className="w-24 h-24 text-magic-gold animate-bounce" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-5xl font-magical font-black text-magic-gold">
+                <h1 className="text-5xl font-display font-black text-magic-gold">
                   Congratulations!
                 </h1>
-                <h2 className="text-3xl font-magical font-bold text-magic-blue">
+                <h2 className="text-3xl font-display font-bold text-magic-blue">
                   {getTitle()}
                 </h2>
               </div>
@@ -134,16 +136,16 @@ const Champions = () => {
             
             <MagicalCardContent className="space-y-8 pb-8">
               <div className="space-y-4">
-                <p className="text-xl font-fantasy text-foreground max-w-2xl mx-auto">
+                <p className="text-xl font-body text-foreground max-w-2xl mx-auto">
                   {getMessage()}
                 </p>
                 
                 <div className="flex justify-center items-center gap-8 py-6">
                   <div className="text-center">
-                    <div className="text-4xl font-magical font-bold text-magic-gold mb-2">
+                    <div className="text-4xl font-display font-bold text-magic-gold mb-2">
                       {accuracy}%
                     </div>
-                    <div className="font-fantasy text-magic-blue">
+                    <div className="font-body text-magic-blue">
                       Final Accuracy
                     </div>
                   </div>
@@ -151,10 +153,10 @@ const Champions = () => {
                   <div className="w-px h-16 bg-magic-blue/30" />
                   
                   <div className="text-center">
-                    <div className="text-4xl font-magical font-bold text-magic-gold mb-2">
+                    <div className="text-4xl font-display font-bold text-magic-gold mb-2">
                       {winner === 'harry' ? '🏆' : '⚔️'}
                     </div>
-                    <div className="font-fantasy text-magic-blue">
+                    <div className="font-body text-magic-blue">
                       {winner === 'harry' ? 'Victory!' : 'Valiant Effort!'}
                     </div>
                   </div>
@@ -165,15 +167,15 @@ const Champions = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center justify-center gap-3 p-4 bg-magic-blue/20 rounded-lg border border-magic-blue/50">
                   <Medal className="w-6 h-6 text-magic-gold" />
-                  <span className="font-fantasy text-magic-blue">Challenge 1 Complete</span>
+                  <span className="font-body text-magic-blue">Challenge 1 Complete</span>
                 </div>
                 <div className="flex items-center justify-center gap-3 p-4 bg-magic-purple/20 rounded-lg border border-magic-purple/50">
                   <Star className="w-6 h-6 text-magic-gold" />
-                  <span className="font-fantasy text-magic-purple">Challenge 2 Complete</span>
+                  <span className="font-body text-magic-purple">Challenge 2 Complete</span>
                 </div>
                 <div className="flex items-center justify-center gap-3 p-4 bg-magic-fire/20 rounded-lg border border-magic-fire/50">
                   <Trophy className="w-6 h-6 text-magic-gold" />
-                  <span className="font-fantasy text-magic-fire">Final Duel Complete</span>
+                  <span className="font-body text-magic-fire">Final Duel Complete</span>
                 </div>
               </div>
 
@@ -212,10 +214,10 @@ const Champions = () => {
           {/* Quote from Dumbledore */}
           <MagicalCard variant="parchment" className="animate-magical-fade" style={{ animationDelay: '0.5s' }}>
             <MagicalCardContent className="text-center py-8">
-              <blockquote className="text-xl font-fantasy italic text-amber-800 max-w-2xl mx-auto">
+              <blockquote className="text-xl font-elegant italic text-amber-800 max-w-2xl mx-auto">
                 "It is our choices that show what we truly are, far more than our abilities. You have chosen to face these challenges with courage and determination."
               </blockquote>
-              <cite className="block mt-4 text-lg font-magical font-semibold text-amber-700">
+              <cite className="block mt-4 text-lg font-display font-semibold text-amber-700">
                 — Albus Dumbledore
               </cite>
             </MagicalCardContent>

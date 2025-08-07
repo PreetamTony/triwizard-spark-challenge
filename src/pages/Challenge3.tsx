@@ -5,6 +5,7 @@ import { MagicalButton } from '@/components/ui/magical-button'
 import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from '@/components/ui/magical-card'
 import { MagicalTimer } from '@/components/ui/magical-timer'
 import { Progress } from '@/components/ui/progress'
+import Navigation from '@/components/Navigation'
 import { toast } from 'sonner'
 import forbiddenForestBg from '@/assets/forbidden-forest.jpg'
 import harryPotter from '@/assets/harry-potter.png'
@@ -121,6 +122,7 @@ const Challenge3 = () => {
     >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/80" />
+      <Navigation />
       
       {/* Magical mist effect */}
       <div className="absolute inset-0 bg-gradient-to-t from-purple-900/20 to-transparent" />
@@ -134,13 +136,13 @@ const Challenge3 = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto p-8 min-h-screen">
+      <div className="relative z-10 container mx-auto p-8 pt-20 min-h-screen">
         {/* Header */}
         <div className="text-center mb-8 animate-magical-fade">
-          <h1 className="text-5xl font-magical font-black text-magic-gold mb-4">
+          <h1 className="text-5xl font-display font-black text-magic-gold mb-4">
             The Final Duel
           </h1>
-          <p className="text-xl font-fantasy text-magic-blue">
+          <p className="text-xl font-body text-magic-blue">
             Upload your predictions and witness the battle between good and evil
           </p>
         </div>
@@ -165,7 +167,7 @@ const Challenge3 = () => {
               )}
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-magical font-bold text-magic-gold">
+              <h3 className="text-2xl font-display font-bold text-magic-gold">
                 Harry Potter
               </h3>
               <div className="w-full bg-background/20 rounded-full h-4 border border-magic-gold">
@@ -174,7 +176,7 @@ const Challenge3 = () => {
                   style={{ width: `${harryPower}%` }}
                 />
               </div>
-              <p className="font-fantasy text-magic-blue">{harryPower}% Power</p>
+              <p className="font-body text-magic-blue">{harryPower}% Power</p>
             </div>
           </div>
 
@@ -194,7 +196,7 @@ const Challenge3 = () => {
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="w-12 h-12 text-magic-blue mx-auto mb-4" />
-                      <p className="font-fantasy text-foreground">
+                      <p className="font-body text-foreground">
                         {selectedFile ? selectedFile.name : "Click to select your dataset"}
                       </p>
                     </div>
@@ -227,10 +229,10 @@ const Challenge3 = () => {
                 <MagicalCardContent className="py-8">
                   <div className="space-y-4">
                     <Wand2 className="w-16 h-16 text-magic-gold mx-auto animate-spin" />
-                    <h3 className="text-2xl font-magical font-bold text-magic-gold">
+                    <h3 className="text-2xl font-display font-bold text-magic-gold">
                       Analyzing Predictions...
                     </h3>
-                    <p className="font-fantasy text-magic-blue">
+                    <p className="font-body text-magic-blue">
                       The magical forces clash as your accuracy is measured!
                     </p>
                   </div>
@@ -243,10 +245,10 @@ const Challenge3 = () => {
                 <MagicalCardContent className="py-8 space-y-6">
                   <Trophy className="w-16 h-16 text-magic-gold mx-auto animate-bounce" />
                   <div className="space-y-2">
-                    <h3 className="text-3xl font-magical font-bold text-magic-gold">
+                    <h3 className="text-3xl font-display font-bold text-magic-gold">
                       {accuracy}% Accuracy
                     </h3>
-                    <p className="font-fantasy text-magic-blue text-lg">
+                    <p className="font-body text-magic-blue text-lg">
                       {accuracy >= 85 ? "Outstanding performance!" : 
                        accuracy >= 75 ? "Good work, but could be better!" :
                        "The challenge was great, but practice makes perfect!"}
@@ -285,7 +287,7 @@ const Challenge3 = () => {
               )}
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-magical font-bold text-red-400">
+              <h3 className="text-2xl font-display font-bold text-red-400">
                 Lord Voldemort
               </h3>
               <div className="w-full bg-background/20 rounded-full h-4 border border-red-500">
@@ -294,7 +296,7 @@ const Challenge3 = () => {
                   style={{ width: `${voldemortPower}%` }}
                 />
               </div>
-              <p className="font-fantasy text-red-400">{voldemortPower}% Power</p>
+              <p className="font-body text-red-400">{voldemortPower}% Power</p>
             </div>
           </div>
         </div>

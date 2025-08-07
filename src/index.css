@@ -122,16 +122,24 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-serif;
-    font-family: 'Crimson Text', serif;
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
   
-  .font-magical {
-    font-family: 'Cinzel Decorative', serif;
+  .font-display {
+    font-family: 'Playfair Display', serif;
   }
   
-  .font-fantasy {
-    font-family: 'Cinzel', serif;
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  
+  .font-elegant {
+    font-family: 'Cormorant Garamond', serif;
   }
 }
 

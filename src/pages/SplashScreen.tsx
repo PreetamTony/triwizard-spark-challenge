@@ -65,10 +65,10 @@ const SplashScreen = () => {
       <div className="relative z-10 text-center space-y-8 max-w-4xl mx-auto px-6">
         {/* Title */}
         <div className="space-y-4 animate-magical-fade">
-          <h1 className="text-6xl md:text-8xl font-magical font-black text-magic-gold drop-shadow-2xl">
+          <h1 className="text-6xl md:text-8xl font-display font-black text-magic-gold drop-shadow-2xl">
             TRIWIZARD
           </h1>
-          <h2 className="text-4xl md:text-6xl font-magical font-bold text-magic-blue drop-shadow-xl">
+          <h2 className="text-4xl md:text-6xl font-display font-bold text-magic-blue drop-shadow-xl">
             CHALLENGE
           </h2>
         </div>
@@ -88,7 +88,7 @@ const SplashScreen = () => {
         {showScroll && (
           <div className="relative animate-scroll-reveal">
             <div className="bg-parchment border-2 border-amber-600 rounded-lg p-6 max-w-md mx-auto transform rotate-1 shadow-2xl">
-              <div className="font-fantasy text-amber-900 text-xl font-semibold text-center">
+              <div className="font-elegant text-amber-900 text-xl font-semibold text-center">
                 {scrollText}
                 <span className="animate-pulse">|</span>
               </div>
