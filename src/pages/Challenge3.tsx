@@ -1,19 +1,38 @@
-import React, { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Upload, Wand2, Zap, Trophy } from 'lucide-react'
-import { MagicalButton } from '@/components/ui/magical-button'
-import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from '@/components/ui/magical-card'
-import { MagicalTimer } from '@/components/ui/magical-timer'
-import { Progress } from '@/components/ui/progress'
-import Navigation from '@/components/Navigation'
-import { toast } from 'sonner'
-import forbiddenForestBg from '@/assets/forbidden-forest.jpg'
-import harryPotter from '@/assets/harry-potter.png'
-import voldemort from '@/assets/voldemort.png'
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Wand2, Zap, Trophy } from 'lucide-react';
+import { MagicalButton } from '@/components/ui/magical-button';
+import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from '@/components/ui/magical-card';
+import { MagicalTimer } from '@/components/ui/magical-timer';
+import Navigation from '@/components/Navigation';
+import { toast } from 'sonner';
+import forbiddenForestBg from '@/assets/forbidden-forest.jpg';
+import harryPotter from '@/assets/harry-potter.png';
+import voldemort from '@/assets/voldemort.png';
 
-const Challenge3 = () => {
-  const navigate = useNavigate()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+const Challenge3: React.FC = () => {
+  // Navigation hook - only declared once at the top level
+  const navigate = useNavigate();
+  
+  // State for keyword gate
+  const [keyword, setKeyword] = useState('');
+  const [isKeywordCorrect, setIsKeywordCorrect] = useState(false);
+  const [showError, setShowError] = useState(false);
+  
+  // Refs
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Handle keyword submission
+  const handleKeywordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (keyword.trim().toLowerCase() === 'expecto') {
+      setIsKeywordCorrect(true);
+      setShowError(false);
+    } else {
+      setShowError(true);
+      toast.error('Incorrect keyword. Remember what you learned from Dumbledore...');
+    }
+  };
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [accuracy, setAccuracy] = useState<number | null>(null)
   const [battlePhase, setBattlePhase] = useState<'upload' | 'battle' | 'result'>('upload')
@@ -110,6 +129,78 @@ const Challenge3 = () => {
     navigate('/champions', { state: { accuracy, winner } })
   }
 
+  // Show keyword gate if keyword is not yet entered correctly
+  if (!isKeywordCorrect) {
+    return (
+      <div 
+        className="min-h-screen relative overflow-hidden flex items-center justify-center"
+        style={{
+          backgroundImage: `url(${forbiddenForestBg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="absolute inset-0 bg-black/80" />
+        <Navigation />
+        
+        <div className="relative z-10 max-w-2xl w-full p-8">
+          <MagicalCard variant="magical" className="animate-float">
+            <MagicalCardHeader className="text-center">
+              <MagicalCardTitle className="text-magic-gold text-3xl">
+                The Forbidden Forest Awaits...
+              </MagicalCardTitle>
+            </MagicalCardHeader>
+            <MagicalCardContent className="space-y-6 p-8">
+              <div className="text-center space-y-4">
+                <Wand2 className="w-12 h-12 text-magic-blue mx-auto animate-pulse" />
+                <p className="font-body text-lg text-foreground">
+                  To enter the final challenge, you must first prove your knowledge.
+                  Speak the word you learned from Dumbledore to proceed.
+                </p>
+                
+                <form onSubmit={handleKeywordSubmit} className="space-y-4">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      placeholder="Enter the magical word..."
+                      className={`w-full p-4 bg-background/50 border-2 rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-magic-gold ${
+                        showError ? 'border-red-500' : 'border-magic-blue/50'
+                      }`}
+                      autoComplete="off"
+                      spellCheck="false"
+                    />
+                    {showError && (
+                      <p className="mt-2 text-sm text-red-400">
+                        Incorrect. Remember the word Dumbledore shared with you.
+                      </p>
+                    )}
+                  </div>
+                  
+                  <MagicalButton
+                    type="submit"
+                    variant="magical"
+                    size="lg"
+                    className="w-full mt-6"
+                  >
+                    Enter the Forest
+                  </MagicalButton>
+                </form>
+                
+                <p className="text-sm text-muted-foreground mt-4">
+                  Hint: The word is what Dumbledore revealed to you in his office.
+                </p>
+              </div>
+            </MagicalCardContent>
+          </MagicalCard>
+        </div>
+      </div>
+    )
+  }
+
+  // Original challenge content
   return (
     <div 
       className="min-h-screen relative overflow-hidden"

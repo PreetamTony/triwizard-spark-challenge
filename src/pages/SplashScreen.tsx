@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { MagicalButton } from '@/components/ui/magical-button'
 import enchantedHallBg from '@/assets/enchanted-hall-bg.jpg'
 import gobletOfFire from '@/assets/goblet-of-fire.png'
+import { MagicalButton } from '@/components/ui/magical-button'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const SplashScreen = () => {
   const navigate = useNavigate()
