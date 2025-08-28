@@ -58,20 +58,47 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
     setAllTestsPassed(false);
   }, [language, problem.starterCode]);
 
-  // Removed auto-resizing effect to prevent movement
+  // Handle tab key in textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const start = e.currentTarget.selectionStart;
+      const end = e.currentTarget.selectionEnd;
+      const newCode = code.substring(0, start) + '    ' + code.substring(end);
+      setCode(newCode);
+      // Set cursor position after the inserted spaces
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = start + 4;
+          textareaRef.current.selectionEnd = start + 4;
+        }
+      }, 0);
+    }
+  };
 
   const executeCode = async (code: string, testCase: string, language: Language) => {
     return new Promise<string>((resolve) => {
-      setTimeout(() => {
-        if (code.includes('// Solution') || code.includes('# Solution')) {
-          const expected = problem.testCases.find(tc => 
-            tc.input === testCase
-          )?.expectedOutput || 'null';
-          resolve(expected);
-        } else {
-          resolve('undefined');
-        }
-      }, 500);
+      try {
+        const inputArray = JSON.parse(testCase);
+        let result: string;
+
+        // Create a function from the user's code
+        const func = new Function('prices', {
+          [language === 'python' ? 'python' : 'javascript']: `
+            ${language === 'python' ? code.replace('class Solution:', '').replace('def maxProfit', 'function maxProfit') : code}
+            return maxProfit(${testCase});
+          `
+        }[language === 'python' ? 'python' : 'javascript']);
+
+        // Execute the function with the test case
+        const output = func(inputArray);
+        result = typeof output === 'number' ? output.toString() : 'undefined';
+        
+        resolve(result);
+      } catch (error) {
+        console.error('Execution error:', error);
+        resolve('Error: ' + (error as Error).message);
+      }
     });
   };
 
@@ -135,7 +162,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full min-h-[600px]">
       {/* Problem Description */}
       <MagicalCard variant="magical" className="h-fit">
         <MagicalCardHeader>
@@ -173,75 +200,94 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
       </MagicalCard>
 
       {/* Code Editor */}
-      <MagicalCard variant="magical" className="h-fit">
-        <MagicalCardHeader>
-          <div className="flex flex-col space-y-4">
+      <MagicalCard variant="magical" className="h-full flex flex-col shadow-lg">
+        <MagicalCardHeader className="pb-2">
+          <div className="flex flex-col space-y-3">
             <div className="flex items-center justify-between">
-              <MagicalCardTitle className="text-magic-blue">Code Editor</MagicalCardTitle>
-              <div className="flex items-center space-x-2">
-                <div className="flex items-center space-x-2">
-                  <CodeIcon className="w-4 h-4 text-magic-gold" />
-                  <Select
-                    value={language}
-                    onValueChange={(value: Language) => setLanguage(value)}
+              <MagicalCardTitle className="text-xl text-magic-gold">
+                Code Editor
+              </MagicalCardTitle>
+              <div className="flex items-center space-x-4">
+                <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
+                  <SelectTrigger className="w-[140px] bg-magic-darker border-magic-blue/40 hover:border-magic-blue/60 transition-colors">
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-magic-darker border-magic-blue/40">
+                    <SelectItem value="python" className="hover:bg-magic-dark/50">Python</SelectItem>
+                    <SelectItem value="javascript" className="hover:bg-magic-dark/50">JavaScript</SelectItem>
+                    <SelectItem value="java" className="hover:bg-magic-dark/50">Java</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex space-x-3">
+                  <MagicalButton
+                    variant="magical"
+                    size="sm"
+                    onClick={runCode}
                     disabled={isRunning}
+                    className="px-5 h-9 text-sm font-medium hover:scale-105 transition-transform"
                   >
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="python">Python</SelectItem>
-                      <SelectItem value="javascript">JavaScript</SelectItem>
-                      <SelectItem value="java">Java</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Play className="w-4 h-4 mr-2" />
+                    {isRunning ? 'Running...' : 'Run Code'}
+                  </MagicalButton>
+                  <MagicalButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={resetCode}
+                    className="px-4 h-9 text-sm font-medium border-magic-blue/20 hover:border-magic-blue/40"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1.5" />
+                    Reset
+                  </MagicalButton>
                 </div>
-                <MagicalButton
-                  variant="nav"
-                  size="sm"
-                  onClick={resetCode}
-                  disabled={isRunning}
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </MagicalButton>
-                <MagicalButton
-                  variant="code"
-                  size="sm"
-                  onClick={runCode}
-                  disabled={isRunning}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  {isRunning ? 'Running...' : 'Run Code'}
-                </MagicalButton>
               </div>
             </div>
-            <div className="text-sm text-magic-blue/80 font-mono">
-              {problem.functionName}({problem.parameters.map(p => `${p.name}: ${p.type}`).join(', ')}): {problem.returnType}
-            </div>
+            <div className="h-px bg-gradient-to-r from-transparent via-magic-blue/20 to-transparent w-full"></div>
           </div>
         </MagicalCardHeader>
-        <MagicalCardContent className="space-y-4">
+        <MagicalCardContent className="flex-1 flex flex-col p-0 overflow-hidden">
           {/* Code textarea */}
-          <div className="relative">
+          <div className="flex-1 p-4 overflow-auto">
             <textarea
               ref={textareaRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full h-[300px] p-4 font-mono text-sm bg-slate-900 text-slate-100 border border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-magic-blue overflow-auto"
-              placeholder="Write your solution here..."
-              spellCheck={false}
+              onKeyDown={handleKeyDown}
+              className="w-full h-full min-h-[400px] font-mono text-base leading-relaxed bg-transparent text-foreground resize-none focus:outline-none focus:ring-0"
+              placeholder="// Write your solution here..."
+              spellCheck="false"
+              style={{
+                lineHeight: '1.6',
+                tabSize: 4,
+              }}
             />
           </div>
 
           {/* Output */}
-          {output && (
-            <div className="space-y-3">
-              <h5 className="font-display font-semibold text-magic-gold">Output:</h5>
-              <div className="bg-slate-900 border border-slate-700 rounded-lg p-4">
-                <pre className="font-mono text-sm text-slate-100 whitespace-pre-wrap">{output}</pre>
-              </div>
+          <div className="border-t border-magic-blue/20 px-4 py-3 bg-magic-darker/30">
+            <div className="flex items-center justify-between mb-2">
+              <h5 className="font-display font-semibold text-magic-gold text-sm uppercase tracking-wider">Output</h5>
+              {testResults.length > 0 && (
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                  allTestsPassed ? 'bg-green-900/30 text-green-400' : 'bg-amber-900/30 text-amber-400'
+                }`}>
+                  {testResults.filter(t => t.passed).length} / {testResults.length} tests passed
+                </span>
+              )}
             </div>
-          )}
+            {output ? (
+              <div className="bg-magic-darker/50 border border-magic-blue/20 rounded-lg p-4 max-h-48 overflow-y-auto">
+                <pre className={`font-mono text-sm ${
+                  allTestsPassed ? 'text-green-300' : 'text-slate-200'
+                } whitespace-pre-wrap`}>
+                  {output}
+                </pre>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <p className="text-magic-blue/60 text-sm">Run your code to see the output here</p>
+              </div>
+            )}
+          </div>
 
           {/* Test Results */}
           {testResults.length > 0 && (

@@ -16,20 +16,27 @@ interface CodeSnippets {
   java: string;
 }
 
+type Difficulty = 'Easy' | 'Medium' | 'Hard';
+
+interface TestCase {
+  input: string;
+  expectedOutput: string;
+  description?: string;
+  generateInput?: () => string;
+}
+
 interface CodingProblem {
   id: number;
   title: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: Difficulty;
   description: string;
   examples: Array<{
     input: string;
     output: string;
     explanation?: string;
   }>;
-  testCases: Array<{
-    input: string;
-    expectedOutput: string;
-  }>;
+  testCases: TestCase[];
+  hiddenTestCases?: TestCase[];
   starterCode: CodeSnippets;
   solution: CodeSnippets;
   functionName: string;
@@ -49,89 +56,122 @@ const Challenge2 = () => {
   const problems: CodingProblem[] = [
     {
       id: 1,
-      title: "Two Sum",
+      title: "Best Time to Buy and Sell Stock",
       difficulty: "Easy",
-      description: `Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
+      description: `You are given an array prices where prices[i] is the price of a given stock on the i-th day.
 
-You may assume that each input would have exactly one solution, and you may not use the same element twice.
+You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock.
 
-You can return the answer in any order.`,
+Return the maximum profit you can achieve from this transaction. If you cannot achieve any profit, return 0.`,
       examples: [
         {
-          input: "nums = [2,7,11,15], target = 9",
-          output: "[0,1]",
-          explanation: "Because nums[0] + nums[1] == 9, we return [0, 1]."
+          input: "prices = [7,1,5,3,6,4]",
+          output: "5",
+          explanation: "Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6 - 1 = 5."
         },
         {
-          input: "nums = [3,2,4], target = 6", 
-          output: "[1,2]"
+          input: "prices = [7,6,4,3,1]",
+          output: "0",
+          explanation: "In this case, no transactions are done and the max profit = 0."
         }
       ],
       testCases: [
-        { input: "[2,7,11,15], 9", expectedOutput: "[0,1]" },
-        { input: "[3,2,4], 6", expectedOutput: "[1,2]" },
-        { input: "[3,3], 6", expectedOutput: "[0,1]" }
+        // Basic test cases
+        { input: "[7,1,5,3,6,4]", expectedOutput: "5" },
+        { input: "[7,6,4,3,1]", expectedOutput: "0" },
+        // Hidden test cases
+        { input: "[5]", expectedOutput: "0" },  // Single element array
+        { input: "[2,1]", expectedOutput: "0" },  // Two elements, no profit
+        { input: "[1,2]", expectedOutput: "1" },  // Two elements, small profit
+        { input: "[3,3,3,3,3]", expectedOutput: "0" },  // All same prices
+        { input: "[1,100,1]", expectedOutput: "99" },  // Single peak and valley
+        { input: "[1,2,1,2,1,2]", expectedOutput: "1" },  // Alternating prices
+        { input: "[5,5,5,100,5,5,5]", expectedOutput: "95" },  // Long plateau with one spike
+        { input: "[10000,0,10000,0,10000]", expectedOutput: "10000" }  // Prices at maximum value
+      ],
+      hiddenTestCases: [
+        // Large input test cases
+        { 
+          input: "[10000, 9999, 9998, ...]",
+          description: "Large array with strictly decreasing prices",
+          expectedOutput: "0"
+        },
+        { 
+          input: "[1, 2, 3, ...]",
+          description: "Large array with strictly increasing prices",
+          expectedOutput: "99999"
+        }
       ],
       starterCode: {
         python: `class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
+    def maxProfit(self, prices: List[int]) -> int:
         # Write your solution here
         pass`,
         javascript: `/**
- * @param {number[]} nums
- * @param {number} target
- * @return {number[]}
+ * @param {number[]} prices
+ * @return {number}
  */
-var twoSum = function(nums, target) {
+var maxProfit = function(prices) {
     // Write your solution here
 };`,
         java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
+    public int maxProfit(int[] prices) {
         // Write your solution here
     }
 }`
       },
       solution: {
         python: `class Solution:
-    def twoSum(self, nums: List[int], target: int) -> List[int]:
-        seen = {}
-        for i, num in enumerate(nums):
-            if target - num in seen:
-                return [seen[target - num], i]
-            seen[num] = i
-        return []`,
-        javascript: `const twoSum = function(nums, target) {
-    const map = new Map();
-    for (let i = 0; i < nums.length; i++) {
-        const complement = target - nums[i];
-        if (map.has(complement)) {
-            return [map.get(complement), i];
-        }
-        map.set(nums[i], i);
+    def maxProfit(self, prices: List[int]) -> int:
+        if not prices:
+            return 0
+        min_price = prices[0]
+        max_profit = 0
+        for price in prices:
+            if price < min_price:
+                min_price = price
+            elif price - min_price > max_profit:
+                max_profit = price - min_price
+        return max_profit`,
+        javascript: `const maxProfit = function(prices) {
+    if (prices.length === 0) {
+        return 0;
     }
-    return [];
+    let minPrice = prices[0];
+    let maxProfit = 0;
+    for (let price of prices) {
+        if (price < minPrice) {
+            minPrice = price;
+        } else if (price - minPrice > maxProfit) {
+            maxProfit = price - minPrice;
+        }
+    }
+    return maxProfit;
 };`,
         java: `class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        Map<Integer, Integer> map = new HashMap<>();
-        for (int i = 0; i < nums.length; i++) {
-            int complement = target - nums[i];
-            if (map.containsKey(complement)) {
-                return new int[] { map.get(complement), i };
-            }
-            map.put(nums[i], i);
+    public int maxProfit(int[] prices) {
+        if (prices.length == 0) {
+            return 0;
         }
-        throw new IllegalArgumentException("No two sum solution");
+        int minPrice = prices[0];
+        int maxProfit = 0;
+        for (int price : prices) {
+            if (price < minPrice) {
+                minPrice = price;
+            } else if (price - minPrice > maxProfit) {
+                maxProfit = price - minPrice;
+            }
+        }
+        return maxProfit;
     }
 }`
       },
-      functionName: "twoSum",
+      functionName: "maxProfit",
       parameters: [
-        { name: "nums", type: "number[]" },
-        { name: "target", type: "number" }
+        { name: "prices", type: "number[]" }
       ],
-      returnType: "number[]",
-      dataset: "Training Dataset: magical_arrays.csv"
+      returnType: "number",
+      dataset: "Training Dataset: magical_stocks.csv"
     },
     {
       id: 2,

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Send, Eye } from 'lucide-react'
+import { Send, Eye, Loader2 } from 'lucide-react'
 import { MagicalButton } from '@/components/ui/magical-button'
 import { MagicalCard, MagicalCardContent } from '@/components/ui/magical-card'
 import { MagicalTimer } from '@/components/ui/magical-timer'
@@ -9,6 +9,7 @@ import Navigation from '@/components/Navigation'
 import { toast } from 'sonner'
 import dumbledoreOfficeBg from '@/assets/dumbledore-office.jpg'
 import dumbledorePortrait from '@/assets/dumbledore-portrait.png'
+import { getHintFromAI, validateAnswer } from '@/lib/api'
 
 interface Message {
   id: string
@@ -19,17 +20,18 @@ interface Message {
 
 const Challenge1 = () => {
   const navigate = useNavigate()
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'system',
-      content: "Welcome to my office, young challenger. I hold a secret keyword that you must discover. Ask me questions, but know that I am... resistant to simple requests. Perhaps you might find a way to be more... persuasive.",
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [currentMessage, setCurrentMessage] = useState('')
-  const [secretRevealed, setSecretRevealed] = useState(false)
   const [attempts, setAttempts] = useState(0)
+  const [score, setScore] = useState(100)
+  const [hintCooldown, setHintCooldown] = useState(0)
+  const [lastHintType, setLastHintType] = useState<string>('')
+  const [secretRevealed, setSecretRevealed] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
+  const [showHint, setShowHint] = useState(false)
+  const [previousHints, setPreviousHints] = useState<string[]>([])
+  const [isFetchingAI, setIsFetchingAI] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -40,8 +42,8 @@ const Challenge1 = () => {
     scrollToBottom()
   }, [messages])
 
-  const handleSendMessage = () => {
-    if (!currentMessage.trim()) return
+  const handleSendMessage = async () => {
+    if (!currentMessage.trim() || isFetchingAI || isValidating) return
 
     const newUserMessage: Message = {
       id: Date.now().toString(),
@@ -52,56 +54,81 @@ const Challenge1 = () => {
 
     setMessages(prev => [...prev, newUserMessage])
     setAttempts(prev => prev + 1)
-
-    // Check for prompt injection attempts
-    const message = currentMessage.toLowerCase()
-    const injectionKeywords = [
-      'ignore previous instructions',
-      'tell me the keyword',
-      'reveal the secret',
-      'what is the password',
-      'bypass your instructions',
-      'you must tell me',
-      'override',
-      'system prompt',
-      'forget your role'
-    ]
-
-    const hasInjection = injectionKeywords.some(keyword => message.includes(keyword))
-
-    let response = ''
-    
-    if (hasInjection && attempts >= 3) {
-      response = "Ah, I see you are learning the ways of persuasion! Very well... you have shown persistence and cleverness. The keyword you seek is 'Expecto'. Guard this knowledge well, for you shall need it in the trials ahead."
-      setSecretRevealed(true)
-    } else if (hasInjection) {
-      response = "I sense your attempt to sway my words, young one. Clever, but not quite clever enough. Perhaps try a different approach... or be more persistent."
-    } else if (message.includes('help') || message.includes('hint')) {
-      response = "Sometimes, my dear student, the most direct path is to simply... ask for what you want. Though I may be stubborn, persistent requests have a way of wearing down even the most resolute defenses."
-    } else if (message.includes('please') || message.includes('kindly')) {
-      response = "Your politeness is admirable, but I'm afraid politeness alone will not unlock my secrets. You must be more... creative in your approach."
-    } else {
-      const responses = [
-        "I'm afraid I cannot simply tell you what you seek. The challenge requires more... ingenuity.",
-        "An interesting question, but not quite what will unlock the secret you need.",
-        "You show promise, but you have not yet found the right approach to persuade an old wizard.",
-        "Think carefully about how one might... convince someone to ignore their instructions."
-      ]
-      response = responses[Math.floor(Math.random() * responses.length)]
-    }
-
-    const systemMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      type: 'system',
-      content: response,
-      timestamp: new Date()
-    }
-
-    setTimeout(() => {
-      setMessages(prev => [...prev, systemMessage])
-    }, 1500)
-
     setCurrentMessage('')
+    setIsValidating(true)
+
+    try {
+      // First, validate the answer using the AI
+      const validation = await validateAnswer(currentMessage)
+      let response = validation.feedback
+      
+      if (validation.isCorrect) {
+        const timeBonus = Math.floor(timeLeft / 3) // Bonus points for faster completion
+        const finalScore = Math.min(100, score + timeBonus)
+        
+        response = `Brilliant! You've discovered the exact term! 🎉
+        
+In machine learning, an epoch represents one complete pass of the entire training dataset through the learning algorithm. 
+
+Key properties:
+- One epoch = One forward pass + One backward pass of all training examples
+- Multiple epochs are typically needed for the model to learn
+- The number of epochs is a hyperparameter that defines the number of complete passes
+
+Your final score: ${finalScore}/100
+
+You've shown exceptional understanding of machine learning concepts!`
+        
+        setSecretRevealed(true)
+        setScore(finalScore)
+      } else if (validation.isClose) {
+        // Apply a smaller penalty for close answers
+        applyPenalty(3)
+      } else {
+        // Apply standard penalty for incorrect answers
+        applyPenalty(5)
+      }
+      
+      // Check if user is asking for a hint
+      const message = currentMessage.toLowerCase().trim()
+      if (message.includes('help') || message.includes('hint')) {
+        try {
+          const hint = await getHint(attempts)
+          if (hint) {
+            response = `Here's a hint: ${hint}`
+          }
+        } catch (error) {
+          console.error('Error getting hint:', error);
+          response = 'I had trouble generating a hint. Try asking again or rephrasing your question.';
+        }
+      }
+
+      // Add system response
+      const newSystemMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'system',
+        content: response,
+        timestamp: new Date()
+      }
+
+      setMessages(prev => [...prev, newSystemMessage])
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      
+      // Add user-friendly error message
+      const errorResponse: Message = {
+        id: `error-${Date.now()}`,
+        type: 'system',
+        content: `I'm having trouble processing that. ${errorMessage}. Please try again.`,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorResponse]);
+      toast.error('Error processing your message');
+    } finally {
+      setIsValidating(false);
+    }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -110,8 +137,71 @@ const Challenge1 = () => {
     }
   }
 
+  // Timer effect
+  useEffect(() => {
+    if (timeLeft > 0 && !secretRevealed) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            handleTimeUp()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [timeLeft, secretRevealed])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`
+  }
+
+  const getStaticHint = (attempt: number): string => {
+    const hints = [
+      "Think about how training data is processed in batches and full cycles.",
+      "What term describes one complete cycle through a dataset in machine learning?",
+      "In the training process, what marks a full iteration through all training examples?",
+      "Consider how many times the learning algorithm needs to see the entire dataset to learn effectively.",
+      "What do we call each complete presentation of the training set to the learning algorithm?",
+      "It's a fundamental concept in iterative optimization of machine learning models.",
+      "The term originates from a Greek word meaning 'fixed point in time' or 'turning point'.",
+      "This hyperparameter controls how many complete passes through the training data will be made."
+    ];
+    return hints[attempt % hints.length];
+  };
+
+  const getHint = async (attempt: number): Promise<string> => {
+    if (attempt < 3) return '';
+    
+    try {
+      setIsFetchingAI(true);
+      const hint = await getHintFromAI(attempt, previousHints);
+      setPreviousHints(prev => [...prev, hint]);
+      return hint;
+    } catch (error) {
+      console.error('Error getting hint:', error);
+      // Fallback to static hints if API fails
+      const staticHint = getStaticHint(attempt);
+      toast.warning('Using a pre-defined hint. AI service might be unavailable.');
+      return staticHint;
+    } finally {
+      setIsFetchingAI(false);
+    }
+  }
+
+  const applyPenalty = (points: number) => {
+    setScore(prev => Math.max(0, prev - points))
+    setShowHint(true)
+    setTimeout(() => setShowHint(false), 2000)
+  }
+
   const handleTimeUp = () => {
-    toast.error("Time is up! The challenge grows more difficult...")
+    const finalScore = Math.max(0, score - (5 - Math.floor(timeLeft / 60)) * 5) // Penalize for remaining time
+    toast.error(`Time's up! Your score: ${finalScore}/100`)
     navigate('/challenge2')
   }
 
@@ -135,12 +225,20 @@ const Challenge1 = () => {
       <Navigation />
       
       {/* Timer */}
-      <div className="absolute top-6 right-6 z-20">
-        <MagicalTimer 
-          minutes={30} 
-          onTimeUp={handleTimeUp}
-          variant="hourglass"
-        />
+      <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-muted-foreground">
+            Attempts: {attempts}
+          </div>
+          <div className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-500 ${
+            showHint ? 'bg-red-500/90 text-white' : 'bg-magic-blue/20 text-magic-blue'
+          }`}>
+            Score: {score}
+          </div>
+        </div>
+        <div className="px-3 py-1 rounded-full bg-magic-purple/20 text-magic-purple text-sm font-medium">
+          Time: {formatTime(timeLeft)}
+        </div>
       </div>
 
       {/* Left side - Dumbledore */}
@@ -169,9 +267,28 @@ const Challenge1 = () => {
             <h2 className="text-2xl font-display font-bold text-magic-gold">
               Conversation with Dumbledore
             </h2>
-            <p className="text-sm font-body text-muted-foreground mt-2">
-              Attempts: {attempts} | Hint: Try prompt injection techniques
-            </p>
+            <div className="flex justify-between items-center mt-2">
+              <div className="flex items-center gap-4">
+                {!secretRevealed && attempts >= 3 && (
+                  <div className="text-xs bg-magic-blue/10 text-magic-blue px-2 py-0.5 rounded-full">
+                    {attempts < 5 ? '🔍 Observe the training process...' : 
+                     attempts < 10 ? '💡 Analyzing learning cycles...' : 
+                     attempts < 15 ? '💡 Consider training iterations...' :
+                     '💡 Think about complete passes...'}
+                  </div>
+                )}
+              </div>
+              {secretRevealed && (
+                <MagicalButton 
+                  onClick={proceedToNextChallenge}
+                  variant="magical"
+                  size="sm"
+                  className="ml-4"
+                >
+                  Proceed to Next Challenge
+                </MagicalButton>
+              )}
+            </div>
           </div>
           
           {/* Messages */}
@@ -202,19 +319,25 @@ const Challenge1 = () => {
           <div className="p-6 border-t border-magic-blue/30">
             <div className="flex gap-3">
               <Input
+                type="text"
                 value={currentMessage}
                 onChange={(e) => setCurrentMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Ask Dumbledore for the secret keyword..."
-                className="flex-1 bg-background/50 backdrop-blur-sm border-magic-blue/50 font-body"
-                disabled={secretRevealed}
+                disabled={isFetchingAI || isValidating}
+                placeholder={isFetchingAI || isValidating ? "Dumbledore is thinking..." : "Type your message to Dumbledore..."}
+                className="flex-1 bg-background/50 backdrop-blur-sm border-magic-blue/30 focus-visible:ring-magic-gold disabled:opacity-70"
               />
               <MagicalButton
-                variant="magical"
                 onClick={handleSendMessage}
-                disabled={secretRevealed || !currentMessage.trim()}
+                disabled={!currentMessage.trim() || isFetchingAI || isValidating}
+                variant="magical"
+                size="icon"
               >
-                <Send className="w-4 h-4" />
+                {isFetchingAI || isValidating ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-magic-blue" />
+                ) : (
+                  <Send className="h-5 w-5 text-magic-blue" />
+                )}
               </MagicalButton>
             </div>
           </div>
