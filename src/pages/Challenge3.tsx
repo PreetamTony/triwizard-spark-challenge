@@ -145,7 +145,7 @@ const Challenge3: React.FC = () => {
         <Navigation />
         
         <div className="relative z-10 max-w-2xl w-full p-8">
-          <MagicalCard variant="magical" className="animate-float">
+          <MagicalCard variant="magical">
             <MagicalCardHeader className="text-center">
               <MagicalCardTitle className="text-magic-gold text-3xl">
                 The Forbidden Forest Awaits...
@@ -274,7 +274,7 @@ const Challenge3: React.FC = () => {
           {/* Upload/Battle Center */}
           <div className="space-y-6">
             {battlePhase === 'upload' && (
-              <MagicalCard variant="magical" className="animate-float">
+              <MagicalCard variant="magical">
                 <MagicalCardHeader className="text-center">
                   <MagicalCardTitle className="text-magic-gold">
                     Upload Your Predictions

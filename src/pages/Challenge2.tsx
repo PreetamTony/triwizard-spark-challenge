@@ -1,32 +1,41 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Code, CheckCircle, Lock, Unlock, Key, ArrowRight } from 'lucide-react'
+import magicalCodingRoomBg from '@/assets/magical-coding-room.jpg'
+import CodeEditor from '@/components/CodeEditor'
+import Navigation from '@/components/Navigation'
+import { Input } from '@/components/ui/input'
 import { MagicalButton } from '@/components/ui/magical-button'
 import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from '@/components/ui/magical-card'
 import { MagicalTimer } from '@/components/ui/magical-timer'
-import { Input } from '@/components/ui/input'
-import CodeEditor from '@/components/CodeEditor'
-import Navigation from '@/components/Navigation'
+import { ArrowRight, CheckCircle, Code, Key } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import magicalCodingRoomBg from '@/assets/magical-coding-room.jpg'
+
+interface CodeSnippets {
+  python: string;
+  javascript: string;
+  java: string;
+}
 
 interface CodingProblem {
-  id: number
-  title: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
-  description: string
+  id: number;
+  title: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  description: string;
   examples: Array<{
-    input: string
-    output: string
-    explanation?: string
-  }>
+    input: string;
+    output: string;
+    explanation?: string;
+  }>;
   testCases: Array<{
-    input: string
-    expectedOutput: string
-  }>
-  starterCode: string
-  solution: string
-  dataset: string
+    input: string;
+    expectedOutput: string;
+  }>;
+  starterCode: CodeSnippets;
+  solution: CodeSnippets;
+  functionName: string;
+  parameters: Array<{ name: string; type: string }>;
+  returnType: string;
+  dataset: string;
 }
 
 const Challenge2 = () => {
@@ -63,21 +72,65 @@ You can return the answer in any order.`,
         { input: "[3,2,4], 6", expectedOutput: "[1,2]" },
         { input: "[3,3], 6", expectedOutput: "[0,1]" }
       ],
-      starterCode: `def twoSum(nums, target):
-    """
-    :type nums: List[int]
-    :type target: int
-    :rtype: List[int]
-    """
-    # Write your solution here
-    pass`,
-      solution: `def twoSum(nums, target):
-    hashmap = {}
-    for i, num in enumerate(nums):
-        if target - num in hashmap:
-            return [hashmap[target - num], i]
-        hashmap[num] = i
-    return []`,
+      starterCode: {
+        python: `class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        # Write your solution here
+        pass`,
+        javascript: `/**
+ * @param {number[]} nums
+ * @param {number} target
+ * @return {number[]}
+ */
+var twoSum = function(nums, target) {
+    // Write your solution here
+};`,
+        java: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        // Write your solution here
+    }
+}`
+      },
+      solution: {
+        python: `class Solution:
+    def twoSum(self, nums: List[int], target: int) -> List[int]:
+        seen = {}
+        for i, num in enumerate(nums):
+            if target - num in seen:
+                return [seen[target - num], i]
+            seen[num] = i
+        return []`,
+        javascript: `const twoSum = function(nums, target) {
+    const map = new Map();
+    for (let i = 0; i < nums.length; i++) {
+        const complement = target - nums[i];
+        if (map.has(complement)) {
+            return [map.get(complement), i];
+        }
+        map.set(nums[i], i);
+    }
+    return [];
+};`,
+        java: `class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        Map<Integer, Integer> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            int complement = target - nums[i];
+            if (map.containsKey(complement)) {
+                return new int[] { map.get(complement), i };
+            }
+            map.put(nums[i], i);
+        }
+        throw new IllegalArgumentException("No two sum solution");
+    }
+}`
+      },
+      functionName: "twoSum",
+      parameters: [
+        { name: "nums", type: "number[]" },
+        { name: "target", type: "number" }
+      ],
+      returnType: "number[]",
       dataset: "Training Dataset: magical_arrays.csv"
     },
     {
@@ -110,23 +163,80 @@ An input string is valid if:
         { input: '"(]"', expectedOutput: "false" },
         { input: '"([)]"', expectedOutput: "false" }
       ],
-      starterCode: `def isValid(s):
-    """
-    :type s: str
-    :rtype: bool
-    """
-    # Write your solution here
-    pass`,
-      solution: `def isValid(s):
-    stack = []
-    mapping = {")": "(", "}": "{", "]": "["}
-    for char in s:
-        if char in mapping:
-            if not stack or stack.pop() != mapping[char]:
-                return False
-        else:
-            stack.append(char)
-    return not stack`,
+      starterCode: {
+        python: `class Solution:
+    def isValid(self, s: str) -> bool:
+        # Write your solution here
+        pass`,
+        javascript: `/**
+ * @param {string} s
+ * @return {boolean}
+ */
+var isValid = function(s) {
+    // Write your solution here
+};`,
+        java: `class Solution {
+    public boolean isValid(String s) {
+        // Write your solution here
+    }
+}`
+      },
+      solution: {
+        python: `class Solution:
+    def isValid(self, s: str) -> bool:
+        stack = []
+        mapping = {")": "(", "}": "{", "]": "["}
+        for char in s:
+            if char in mapping:
+                top_element = stack.pop() if stack else '#'
+                if mapping[char] != top_element:
+                    return False
+            else:
+                stack.append(char)
+        return not stack`,
+        javascript: `const isValid = function(s) {
+    const stack = [];
+    const mapping = { ")": "(", "}": "{", "]": "[" };
+    for (let char of s) {
+        if (char in mapping) {
+            const topElement = stack.length ? stack.pop() : '#';
+            if (mapping[char] !== topElement) {
+                return false;
+            }
+        } else {
+            stack.push(char);
+        }
+    }
+    return stack.length === 0;
+};`,
+        java: `class Solution {
+    public boolean isValid(String s) {
+        Stack<Character> stack = new Stack<>();
+        Map<Character, Character> mapping = new HashMap<>();
+        mapping.put(')', '(');
+        mapping.put('}', '{');
+        mapping.put(']', '[');
+        
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (mapping.containsKey(c)) {
+                char topElement = stack.isEmpty() ? '#' : stack.pop();
+                if (topElement != mapping.get(c)) {
+                    return false;
+                }
+            } else {
+                stack.push(c);
+            }
+        }
+        return stack.isEmpty();
+    }
+}`
+      },
+      functionName: "isValid",
+      parameters: [
+        { name: "s", type: "string" }
+      ],
+      returnType: "boolean",
       dataset: "Validation Dataset: magical_strings.csv"
     },
     {
@@ -155,32 +265,109 @@ Follow up: Recursive solution is trivial, could you do it iteratively?`,
         { input: "[]", expectedOutput: "[]" },
         { input: "[1]", expectedOutput: "[1]" }
       ],
-      starterCode: `# Definition for a binary tree node.
-class TreeNode:
-    def __init__(self, val=0, left=None, right=None):
-        self.val = val
-        self.left = left
-        self.right = right
-
-def inorderTraversal(root):
-    """
-    :type root: TreeNode
-    :rtype: List[int]
-    """
-    # Write your solution here
-    pass`,
-      solution: `def inorderTraversal(root):
-    result = []
-    stack = []
-    current = root
-    while stack or current:
-        while current:
-            stack.append(current)
-            current = current.left
-        current = stack.pop()
-        result.append(current.val)
-        current = current.right
-    return result`,
+      starterCode: {
+        python: `# Definition for a binary tree node.
+# class TreeNode:
+#     def __init__(self, val=0, left=None, right=None):
+#         self.val = val
+#         self.left = left
+#         self.right = right
+class Solution:
+    def inorderTraversal(self, root: Optional[TreeNode]) -> List[int]:
+        # Write your solution here
+        pass`,
+        javascript: `/**
+ * Definition for a binary tree node.
+ * function TreeNode(val, left, right) {
+ *     this.val = (val===undefined ? 0 : val)
+ *     this.left = (left===undefined ? null : left)
+ *     this.right = (right===undefined ? null : right)
+ * }
+ */
+/**
+ * @param {TreeNode} root
+ * @return {number[]}
+ */
+var inorderTraversal = function(root) {
+    // Write your solution here
+};`,
+        java: `/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+        // Write your solution here
+    }
+}`
+      },
+      solution: {
+        python: `class Solution:
+    def inorderTraversal(self, root: Optional[TreeNode]) -> List[int]:
+        result = []
+        stack = []
+        current = root
+        while current or stack:
+            while current:
+                stack.append(current)
+                current = current.left
+            current = stack.pop()
+            result.append(current.val)
+            current = current.right
+        return result`,
+        javascript: `const inorderTraversal = function(root) {
+    const result = [];
+    const stack = [];
+    let current = root;
+    
+    while (current || stack.length) {
+        while (current) {
+            stack.push(current);
+            current = current.left;
+        }
+        current = stack.pop();
+        result.push(current.val);
+        current = current.right;
+    }
+    
+    return result;
+};`,
+        java: `class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+        List<Integer> result = new ArrayList<>();
+        Stack<TreeNode> stack = new Stack<>();
+        TreeNode current = root;
+        
+        while (current != null || !stack.isEmpty()) {
+            while (current != null) {
+                stack.push(current);
+                current = current.left;
+            }
+            current = stack.pop();
+            result.add(current.val);
+            current = current.right;
+        }
+        
+        return result;
+    }
+}`
+      },
+      functionName: "inorderTraversal",
+      parameters: [
+        { name: "root", type: "TreeNode" }
+      ],
+      returnType: "number[]",
       dataset: "Test Dataset: magical_trees.csv"
     }
   ]
@@ -307,7 +494,7 @@ def inorderTraversal(root):
                 key={problem.id}
                 variant={isSolved ? "floating" : "magical"}
                 className={`transition-all duration-500 cursor-pointer hover:scale-105 ${
-                  isSolved ? 'gold-glow animate-float' : ''
+                  isSolved ? 'gold-glow ' : ''
                 }`}
                 onClick={() => !isSolved && setCurrentProblem(problem.id)}
               >
