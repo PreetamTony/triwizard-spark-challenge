@@ -58,12 +58,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
     setAllTestsPassed(false);
   }, [language, problem.starterCode]);
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
-    }
-  }, [code])
+  // Removed auto-resizing effect to prevent movement
 
   const executeCode = async (code: string, testCase: string, language: Language) => {
     return new Promise<string>((resolve) => {
@@ -178,7 +173,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
       </MagicalCard>
 
       {/* Code Editor */}
-      <MagicalCard variant="floating" className="h-fit">
+      <MagicalCard variant="magical" className="h-fit">
         <MagicalCardHeader>
           <div className="flex flex-col space-y-4">
             <div className="flex items-center justify-between">
@@ -232,7 +227,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
               ref={textareaRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full min-h-[300px] p-4 font-mono text-sm bg-slate-900 text-slate-100 border border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-magic-blue"
+              className="w-full h-[300px] p-4 font-mono text-sm bg-slate-900 text-slate-100 border border-slate-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-magic-blue overflow-auto"
               placeholder="Write your solution here..."
               spellCheck={false}
             />
