@@ -1,8 +1,8 @@
-import React from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Home, Trophy, Code, Wand2 } from 'lucide-react'
-import { MagicalButton } from './ui/magical-button'
 import { cn } from '@/lib/utils'
+import { ArrowLeft, ArrowRight, Home, Wand2 } from 'lucide-react'
+import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { MagicalButton } from './ui/magical-button'
 
 interface NavigationProps {
   className?: string
@@ -12,17 +12,22 @@ const Navigation: React.FC<NavigationProps> = ({ className }) => {
   const navigate = useNavigate()
   const location = useLocation()
   
+  // Only allow navigation up to Challenge 1
   const challenges = [
     { path: '/', label: 'Start', icon: Home },
     { path: '/challenge1', label: 'Dumbledore\'s Test', icon: Wand2 },
-    { path: '/challenge2', label: 'Coding Trials', icon: Code },
-    { path: '/challenge3', label: 'Final Duel', icon: ArrowRight },
-    { path: '/champions', label: 'Champions', icon: Trophy },
+    // Disabled: Challenge 2, Challenge 3
+    // { path: '/challenge2', label: 'Coding Trials', icon: Code },
+    // { path: '/challenge3', label: 'Final Duel', icon: ArrowRight },
+    //{ path: '/champions', label: 'Champions', icon: Trophy },
   ]
   
   const currentIndex = challenges.findIndex(c => c.path === location.pathname)
   const canGoBack = currentIndex > 0
+  // Only allow forward navigation if next is not a disabled challenge
   const canGoForward = currentIndex < challenges.length - 1 && currentIndex !== -1
+    && challenges[currentIndex + 1].path !== '/challenge2'
+    && challenges[currentIndex + 1].path !== '/challenge3'
   
   const goBack = () => {
     if (canGoBack) {

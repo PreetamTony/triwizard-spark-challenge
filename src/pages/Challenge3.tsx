@@ -25,7 +25,7 @@ const Challenge3: React.FC = () => {
   // Handle keyword submission
   const handleKeywordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (keyword.trim().toLowerCase() === 'expecto') {
+    if (keyword.trim().toLowerCase() === 'epoch') {
       setIsKeywordCorrect(true);
       setShowError(false);
     } else {

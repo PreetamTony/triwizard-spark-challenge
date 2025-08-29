@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Play, RotateCcw, CheckCircle, XCircle, Code as CodeIcon } from 'lucide-react'
-import { MagicalButton } from './ui/magical-button'
-import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from './ui/magical-card'
-import { toast } from 'sonner'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, RotateCcw, CheckCircle, XCircle, Code as CodeIcon, Loader2 } from 'lucide-react';
+import { MagicalButton } from './ui/magical-button';
+import { MagicalCard, MagicalCardContent, MagicalCardHeader, MagicalCardTitle } from './ui/magical-card';
+import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { executeWithGroq } from '@/lib/groq';
 
 type Language = 'python' | 'javascript' | 'java';
 
@@ -38,10 +39,12 @@ interface CodeEditorProps {
 }
 
 const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
+  // State management
   const [language, setLanguage] = useState<Language>('python');
   const [code, setCode] = useState(problem.starterCode.python);
   const [output, setOutput] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const [testResults, setTestResults] = useState<Array<{
     passed: boolean;
     input: string;
@@ -76,70 +79,144 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
     }
   };
 
-  const executeCode = async (code: string, testCase: string, language: Language) => {
-    return new Promise<string>((resolve) => {
+  const executeCode = async (userCode: string, testCase: string, codeLanguage: Language): Promise<string> => {
+    setIsExecuting(true);
+    try {
+      // First try to validate the test case
       try {
-        const inputArray = JSON.parse(testCase);
-        let result: string;
-
-        // Create a function from the user's code
-        const func = new Function('prices', {
-          [language === 'python' ? 'python' : 'javascript']: `
-            ${language === 'python' ? code.replace('class Solution:', '').replace('def maxProfit', 'function maxProfit') : code}
-            return maxProfit(${testCase});
-          `
-        }[language === 'python' ? 'python' : 'javascript']);
-
-        // Execute the function with the test case
-        const output = func(inputArray);
-        result = typeof output === 'number' ? output.toString() : 'undefined';
-        
-        resolve(result);
-      } catch (error) {
-        console.error('Execution error:', error);
-        resolve('Error: ' + (error as Error).message);
+        JSON.parse(testCase); // Validate JSON without storing
+      } catch (e) {
+        throw new Error(`Invalid test case format: ${testCase}. Expected valid JSON.`);
       }
-    });
+
+      // Use Groq API for code execution
+      const { result, error } = await executeWithGroq(
+        userCode,
+        codeLanguage,
+        testCase,
+        problem.functionName
+      );
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      return result || 'No output';
+    } catch (error) {
+      console.error('Code execution error:', error);
+      return `Error: ${error instanceof Error ? error.message : String(error)}`;
+    } finally {
+      setIsExecuting(false);
+    }
   };
 
   const runCode = async () => {
     setIsRunning(true);
-    setOutput('');
+    setOutput('Running tests...\n');
     setTestResults([]);
     
     try {
       const results = [];
       let allPassed = true;
+      let executionTime = Date.now();
 
-      for (const testCase of problem.testCases) {
-        const actual = await executeCode(code, testCase.input, language);
-        const passed = actual === testCase.expectedOutput;
+      // Execute each test case
+      for (let i = 0; i < problem.testCases.length; i++) {
+        const testCase = problem.testCases[i];
         
-        if (!passed) allPassed = false;
+        // Update UI to show current test being executed
+        setOutput(`Running test case ${i + 1}/${problem.testCases.length}...`);
         
-        results.push({
-          passed,
-          input: testCase.input,
-          expected: testCase.expectedOutput,
-          actual: actual || 'undefined'
-        });
+        try {
+          const startTime = performance.now();
+          const actual = await executeCode(code, testCase.input, language);
+          const executionTimeMs = (performance.now() - startTime).toFixed(2);
+          
+          // Normalize the actual and expected outputs for comparison
+          const normalizeOutput = (output: string) => {
+            try {
+              // Try to parse as JSON and re-stringify to handle formatting differences
+              const parsed = JSON.parse(output);
+              return JSON.stringify(parsed);
+            } catch {
+              // If not valid JSON, trim whitespace and convert to string
+              return String(output).trim();
+            }
+          };
+          
+          const normalizedActual = normalizeOutput(actual);
+          const normalizedExpected = normalizeOutput(testCase.expectedOutput);
+          
+          const passed = normalizedActual === normalizedExpected;
+          if (!passed) allPassed = false;
+          
+          results.push({
+            passed,
+            input: testCase.input,
+            expected: testCase.expectedOutput,
+            actual: actual || 'undefined',
+            executionTime: executionTimeMs,
+            isHidden: (testCase as any).isHidden || false
+          });
+          
+          // Update test results after each test case
+          setTestResults([...results]);
+          
+        } catch (error) {
+          console.error(`Error in test case ${i + 1}:`, error);
+          results.push({
+            passed: false,
+            input: testCase.input,
+            expected: testCase.expectedOutput,
+            actual: `Error: ${(error as Error).message}`,
+            executionTime: 0,
+            isHidden: (testCase as any).isHidden || false
+          });
+          allPassed = false;
+          setTestResults([...results]);
+        }
       }
       
+      // Calculate total execution time
+      executionTime = Date.now() - executionTime;
+      
+      // Update final state
       setTestResults(results);
       setAllTestsPassed(allPassed);
       
+      // Prepare summary
+      const passedCount = results.filter(r => r.passed).length;
+      const totalTests = results.length;
+      const successRate = Math.round((passedCount / totalTests) * 100);
+      
+      let outputMessage = `Test Results (${executionTime}ms):\n`;
+      outputMessage += `✅ ${passedCount} passed • ❌ ${totalTests - passedCount} failed • ${successRate}% success\n\n`;
+      
+      // Add details for failed tests
+      const failedTests = results.filter(r => !r.passed && !(r as any).isHidden);
+      if (failedTests.length > 0) {
+        outputMessage += `Failed Test Cases:\n`;
+        failedTests.forEach((test, index) => {
+          outputMessage += `\nTest #${index + 1} (${test.executionTime}ms):\n`;
+          outputMessage += `Input: ${test.input}\n`;
+          outputMessage += `Expected: ${test.expected}\n`;
+          outputMessage += `Actual:   ${test.actual}\n`;
+        });
+      }
+      
+      setOutput(outputMessage);
+      
       if (allPassed) {
-        setOutput('All test cases passed! ');
-        toast.success('All tests passed! Challenge solved!');
+        toast.success(`All ${totalTests} test cases passed! 🎉`);
         onSolved();
       } else {
-        setOutput('Some test cases failed. Check your solution.');
-        toast.error('Some tests failed. Keep trying!');
+        toast.error(`${totalTests - passedCount} test(s) failed. Keep trying!`);
       }
       
     } catch (error) {
-      setOutput(`Error running code: ${error}`);
-      toast.error('Error running code');
+      console.error('Error running tests:', error);
+      setOutput(`Error running tests: ${(error as Error).message}\n\nPlease check your code for syntax errors.`);
+      toast.error('Error running tests');
     } finally {
       setIsRunning(false);
     }
@@ -160,6 +237,48 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
       default: return 'text-gray-500'
     }
   }
+
+  // Render test case result item
+  const renderTestCaseResult = (test: any, index: number) => (
+    <div key={index} className={`p-3 rounded-lg border ${test.passed ? 'bg-green-900/20 border-green-500/30' : 'bg-red-900/20 border-red-500/30'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center space-x-2">
+          {test.passed ? (
+            <CheckCircle className="w-4 h-4 text-green-500" />
+          ) : (
+            <XCircle className="w-4 h-4 text-red-500" />
+          )}
+          <span className="font-mono text-sm">Test Case {index + 1}</span>
+        </div>
+        <span className="text-xs text-muted-foreground">{test.executionTime}ms</span>
+      </div>
+      
+      {!test.passed && (
+        <div className="mt-2 space-y-1 text-sm">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-xs text-muted-foreground">Input:</div>
+              <div className="font-mono bg-background/50 p-1.5 rounded text-xs overflow-x-auto">
+                {test.input}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">Expected:</div>
+              <div className="font-mono bg-background/50 p-1.5 rounded text-xs text-green-400">
+                {test.expected}
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Actual:</div>
+            <div className="font-mono bg-background/50 p-1.5 rounded text-xs text-red-400">
+              {test.actual}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full min-h-[600px]">
@@ -199,135 +318,84 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ problem, onSolved }) => {
         </MagicalCardContent>
       </MagicalCard>
 
-      {/* Code Editor */}
-      <MagicalCard variant="magical" className="h-full flex flex-col shadow-lg">
-        <MagicalCardHeader className="pb-2">
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center justify-between">
-              <MagicalCardTitle className="text-xl text-magic-gold">
-                Code Editor
-              </MagicalCardTitle>
-              <div className="flex items-center space-x-4">
-                <Select value={language} onValueChange={(value) => setLanguage(value as Language)}>
-                  <SelectTrigger className="w-[140px] bg-magic-darker border-magic-blue/40 hover:border-magic-blue/60 transition-colors">
-                    <SelectValue placeholder="Language" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-magic-darker border-magic-blue/40">
-                    <SelectItem value="python" className="hover:bg-magic-dark/50">Python</SelectItem>
-                    <SelectItem value="javascript" className="hover:bg-magic-dark/50">JavaScript</SelectItem>
-                    <SelectItem value="java" className="hover:bg-magic-dark/50">Java</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex space-x-3">
-                  <MagicalButton
-                    variant="magical"
-                    size="sm"
-                    onClick={runCode}
-                    disabled={isRunning}
-                    className="px-5 h-9 text-sm font-medium hover:scale-105 transition-transform"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    {isRunning ? 'Running...' : 'Run Code'}
-                  </MagicalButton>
-                  <MagicalButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={resetCode}
-                    className="px-4 h-9 text-sm font-medium border-magic-blue/20 hover:border-magic-blue/40"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-1.5" />
-                    Reset
-                  </MagicalButton>
-                </div>
-              </div>
-            </div>
-            <div className="h-px bg-gradient-to-r from-transparent via-magic-blue/20 to-transparent w-full"></div>
+      {/* Code Editor and Results */}
+      <div className="flex flex-col space-y-4 h-full">
+        <div className="relative flex-1 bg-background rounded-lg border border-border overflow-hidden">
+          <textarea
+            ref={textareaRef}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full h-full font-mono text-sm bg-background text-foreground p-4 focus:outline-none resize-none"
+            spellCheck="false"
+            style={{ tabSize: 4 }}
+          />
+          <div className="absolute bottom-4 right-4 text-xs text-muted-foreground">
+            {language.toUpperCase()}
           </div>
-        </MagicalCardHeader>
-        <MagicalCardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-          {/* Code textarea */}
-          <div className="flex-1 p-4 overflow-auto">
-            <textarea
-              ref={textareaRef}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full h-full min-h-[400px] font-mono text-base leading-relaxed bg-transparent text-foreground resize-none focus:outline-none focus:ring-0"
-              placeholder="// Write your solution here..."
-              spellCheck="false"
-              style={{
-                lineHeight: '1.6',
-                tabSize: 4,
-              }}
-            />
-          </div>
+        </div>
 
-          {/* Output */}
-          <div className="border-t border-magic-blue/20 px-4 py-3 bg-magic-darker/30">
-            <div className="flex items-center justify-between mb-2">
-              <h5 className="font-display font-semibold text-magic-gold text-sm uppercase tracking-wider">Output</h5>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="font-display font-semibold">
+              Test Results
               {testResults.length > 0 && (
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                  allTestsPassed ? 'bg-green-900/30 text-green-400' : 'bg-amber-900/30 text-amber-400'
-                }`}>
-                  {testResults.filter(t => t.passed).length} / {testResults.length} tests passed
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  ({testResults.filter(t => t.passed).length}/{testResults.length} passed)
                 </span>
               )}
-            </div>
-            {output ? (
-              <div className="bg-magic-darker/50 border border-magic-blue/20 rounded-lg p-4 max-h-48 overflow-y-auto">
-                <pre className={`font-mono text-sm ${
-                  allTestsPassed ? 'text-green-300' : 'text-slate-200'
-                } whitespace-pre-wrap`}>
-                  {output}
-                </pre>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-magic-blue/60 text-sm">Run your code to see the output here</p>
+            </h4>
+            {allTestsPassed && testResults.length > 0 && (
+              <div className="flex items-center text-green-500 text-sm">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                All tests passed!
               </div>
             )}
           </div>
-
-          {/* Test Results */}
-          {testResults.length > 0 && (
-            <div className="space-y-3">
-              <h5 className="font-display font-semibold text-magic-gold">Test Results:</h5>
+          
+          <div className="bg-background/50 rounded-lg p-4 font-mono text-sm h-64 overflow-auto">
+            {testResults.length > 0 ? (
               <div className="space-y-2">
-                {testResults.map((result, index) => (
-                  <div key={index} className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    result.passed 
-                      ? 'bg-green-900/20 border-green-700 text-green-100' 
-                      : 'bg-red-900/20 border-red-700 text-red-100'
-                  }`}>
-                    {result.passed ? (
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-400" />
-                    )}
-                    <div className="font-mono text-sm flex-1">
-                      <div>Input: {result.input}</div>
-                      <div>Expected: {result.expected}</div>
-                      {!result.passed && <div>Got: {result.actual}</div>}
+                <div className="text-sm mb-2">
+                  {output && <div className="mb-2 text-foreground/80">{output}</div>}
+                  <div className="flex items-center space-x-2">
+                    <div className="h-2 flex-1 bg-green-900/50 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-green-500 transition-all duration-500"
+                        style={{
+                          width: `${(testResults.filter(t => t.passed).length / testResults.length) * 100}%`
+                        }}
+                      />
                     </div>
+                    <span className="text-xs text-muted-foreground">
+                      {testResults.filter(t => t.passed).length}/{testResults.length} passed
+                    </span>
                   </div>
-                ))}
+                </div>
+                
+                <div className="space-y-2">
+                  {testResults.map((test, index) => renderTestCaseResult(test, index))}
+                </div>
               </div>
-            </div>
-          )}
-
-          {allTestsPassed && (
-            <div className="bg-green-900/20 border border-green-700 rounded-lg p-4 text-center">
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Run your code to see test results...
+              </div>
+            )}
+          </div>
+          
+          {allTestsPassed && testResults.length > 0 && (
+            <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 text-center">
               <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
               <p className="font-display font-semibold text-green-100">
                 Congratulations! All tests passed! 🎉
               </p>
             </div>
           )}
-        </MagicalCardContent>
-      </MagicalCard>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default CodeEditor
+export default CodeEditor;

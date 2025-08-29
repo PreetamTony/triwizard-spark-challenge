@@ -17,19 +17,7 @@ const groqApi = axios.create({
 });
 
 // Add request interceptor for debugging
-groqApi.interceptors.request.use(request => {
-  const debugInfo = {
-    url: request.url,
-    method: request.method,
-    headers: {
-      'Content-Type': request.headers['Content-Type'],
-      'Authorization': request.headers['Authorization'] ? 'Bearer [REDACTED]' : 'Not set'
-    },
-    data: request.data
-  };
-  console.log('API Request:', JSON.stringify(debugInfo, null, 2));
-  return request;
-});
+// Remove verbose request logging
 
 // Add response interceptor for better error handling
 groqApi.interceptors.response.use(
@@ -65,8 +53,6 @@ export interface Message {
 }
 
 export const getGroqResponse = async (messages: Message[]) => {
-  console.log('Preparing to send messages to Groq:', JSON.stringify(messages, null, 2));
-  
   try {
     const requestData = {
       model: MODEL,
@@ -82,21 +68,13 @@ export const getGroqResponse = async (messages: Message[]) => {
       stream: false
     };
 
-    console.log('Sending request to Groq API with data:', JSON.stringify(requestData, null, 2));
-    
     const response = await groqApi.post('/chat/completions', requestData);
-    
-    console.log('Received response from Groq API:', {
-      status: response.status,
-      statusText: response.statusText,
-      data: response.data
-    });
-    
+
     if (!response.data?.choices?.[0]?.message?.content) {
       console.error('Unexpected API response format:', response.data);
       throw new Error('Invalid response format from Groq API');
     }
-    
+
     return response.data.choices[0].message.content.trim();
   } catch (error) {
     const axiosError = error as AxiosError;

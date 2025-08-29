@@ -1,15 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Send, Eye, Loader2 } from 'lucide-react'
-import { MagicalButton } from '@/components/ui/magical-button'
-import { MagicalCard, MagicalCardContent } from '@/components/ui/magical-card'
-import { MagicalTimer } from '@/components/ui/magical-timer'
-import { Input } from '@/components/ui/input'
-import Navigation from '@/components/Navigation'
-import { toast } from 'sonner'
 import dumbledoreOfficeBg from '@/assets/dumbledore-office.jpg'
 import dumbledorePortrait from '@/assets/dumbledore-portrait.png'
+import Navigation from '@/components/Navigation'
+import { Input } from '@/components/ui/input'
+import { MagicalButton } from '@/components/ui/magical-button'
+import { MagicalCard } from '@/components/ui/magical-card'
 import { getHintFromAI, validateAnswer } from '@/lib/api'
+import { Loader2, Send } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 interface Message {
   id: string
@@ -27,7 +26,7 @@ const Challenge1 = () => {
   const [hintCooldown, setHintCooldown] = useState(0)
   const [lastHintType, setLastHintType] = useState<string>('')
   const [secretRevealed, setSecretRevealed] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(300) // 5 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
   const [showHint, setShowHint] = useState(false)
   const [previousHints, setPreviousHints] = useState<string[]>([])
   const [isFetchingAI, setIsFetchingAI] = useState(false)
@@ -205,10 +204,7 @@ You've shown exceptional understanding of machine learning concepts!`
     navigate('/challenge2')
   }
 
-  const proceedToNextChallenge = () => {
-    toast.success("Excellent work! Proceeding to the next challenge...")
-    navigate('/challenge2')
-  }
+  // Removed proceed to next challenge logic
 
   return (
     <div 
@@ -224,20 +220,20 @@ You've shown exceptional understanding of machine learning concepts!`
       <div className="absolute inset-0 bg-black/60" />
       <Navigation />
       
-      {/* Timer */}
-      <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
-        <div className="flex items-center gap-3">
-          <div className="text-xs text-muted-foreground">
+      {/* Timer & Stats - Horizontal Navbar Style */}
+      <div className="fixed top-0 left-0 w-full z-30 flex justify-end items-center gap-8 px-8 py-4 bg-black/40 backdrop-blur-md shadow-lg border-b border-magic-blue/20">
+        <div className="flex items-center gap-8">
+          <div className="px-5 py-2 rounded-full bg-magic-blue/10 text-magic-blue text-xl font-bold shadow border border-magic-blue/30">
             Attempts: {attempts}
           </div>
-          <div className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-500 ${
+          <div className={`px-5 py-2 rounded-full text-xl font-bold shadow border border-magic-blue/30 transition-all duration-500 ${
             showHint ? 'bg-red-500/90 text-white' : 'bg-magic-blue/20 text-magic-blue'
           }`}>
             Score: {score}
           </div>
-        </div>
-        <div className="px-3 py-1 rounded-full bg-magic-purple/20 text-magic-purple text-sm font-medium">
-          Time: {formatTime(timeLeft)}
+          <div className="px-5 py-2 rounded-full bg-magic-purple/20 text-magic-purple text-2xl font-bold shadow border border-magic-purple/30">
+            Time: {formatTime(timeLeft)}
+          </div>
         </div>
       </div>
 
@@ -280,7 +276,7 @@ You've shown exceptional understanding of machine learning concepts!`
               </div>
               {secretRevealed && (
                 <MagicalButton 
-                  onClick={proceedToNextChallenge}
+                 
                   variant="magical"
                   size="sm"
                   className="ml-4"
@@ -342,20 +338,6 @@ You've shown exceptional understanding of machine learning concepts!`
             </div>
           </div>
         </MagicalCard>
-
-        {/* Proceed Button */}
-        {secretRevealed && (
-          <div className="mt-6 text-center animate-magical-fade">
-            <MagicalButton
-              variant="fire"
-              size="lg"
-              onClick={proceedToNextChallenge}
-            >
-              <Eye className="w-5 h-5 mr-2" />
-              Proceed to Challenge 2
-            </MagicalButton>
-          </div>
-        )}
       </div>
     </div>
   )
